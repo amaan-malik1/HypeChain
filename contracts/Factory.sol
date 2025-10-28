@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {Token} from "./Token.sol";
 
@@ -8,7 +8,7 @@ contract Factory {
     uint256 public constant TOKEN_LIMIT = 500_000 ether;
 
     uint256 public immutable fee;
-    address owner;
+    address public owner;
     uint256 totalTokens;
     address[] public tokens;
 
