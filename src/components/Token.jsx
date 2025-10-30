@@ -4,6 +4,7 @@ import React from 'react'
 const Token = ({ token, toggleTrade }) => {
     return (
         <div>
+            {/* onclick the trade button to open trade modal */}
             <button onClick={() => { toggleTrade(token) }} className="token">
                 <div className="token__details">
                     <img src={token.image} alt="Token Img" />

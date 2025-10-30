@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import Header from './components/Header'
 import List from './components/List';
+import Trade from './components/Trade';
 
 //contract things
 import config from './config.json';
@@ -16,7 +17,20 @@ function App() {
   const [fee, setFee] = useState(0);
   const [showCreate, setShowCreate] = useState(false);
   const [tokens, setTokens] = useState([]);
+  const [showTrade, setShowTrade] = useState(false);
+  const [token, setToken] = useState([]);
 
+
+
+  async function toggleCreate() {
+    showCreate ? setShowCreate(false) : setShowCreate(true);
+  }
+
+  async function toggleTrade(token) {
+    // when the token get set the modal will pop-up
+    setToken(token);
+    showTrade ? setShowTrade(false) : setShowTrade(true);
+  }
 
   async function loadBloackchainData() {
     const provider = new ethers.BrowserProvider(window.ethereum);
@@ -70,10 +84,6 @@ function App() {
     loadBloackchainData();
   }, []);
 
-  async function toggleCreate() {
-    showCreate ? setShowCreate(false) : setShowCreate(true);
-  }
-
 
 
   return (
@@ -111,7 +121,7 @@ function App() {
                 <p> No token listed yet</p>
               ) : (
                 tokens.map((token, index) => {
-                  <Token key={index} token={token} toggleTrade={() => { }} />
+                  <Token key={index} token={token} toggleTrade={toggleTrade} />
                 })
               )
             )}
@@ -124,6 +134,14 @@ function App() {
       {
         showCreate && (
           <List toggleCreate={toggleCreate} fee={fee} provider={provider} factory={factory} />
+        )
+      }
+
+      {/* show the trade for the token */}
+      {
+        showTrade && (
+          <Trade toggleTrade={toggleTrade} token={token} factory={factory} provider={provider} />
+
         )
       }
 
