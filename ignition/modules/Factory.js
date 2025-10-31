@@ -1,18 +1,15 @@
 // This setup uses Hardhat Ignition to manage smart contract deployments.
-// Learn more about it at https://hardhat.org/ignition
+// Learn more at https://hardhat.org/ignition
 
-import { buildModule }from"@nomicfoundation/hardhat-ignition/modules";
-import{ ethers } from "hardhat";
-
-const FEE = ethers.parseUnits("0.01", 18)
+import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 export default buildModule("FactoryModule", (m) => {
-  // Get parameters
-  const fee = m.getParameter("fee", FEE);
+  // Use plain string for 0.01 ETH fee (in wei)
+  const fee = m.getParameter("fee", "10000000000000000"); // 0.01 ETH
 
-  // Define factory
+  // Deploy Factory with the fee argument
   const factory = m.contract("Factory", [fee]);
 
-  // Return factory
+  // Return the deployed contract instance
   return { factory };
-})
+});

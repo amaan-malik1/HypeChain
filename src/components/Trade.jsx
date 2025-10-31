@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const Trade = ({ token, toggleTrade, provider, factory }) => {
   const [target, setTarget] = useState(0);

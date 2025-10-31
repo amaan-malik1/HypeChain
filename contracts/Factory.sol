@@ -79,52 +79,47 @@ contract Factory {
         emit TokenCreated(address(token));
     }
 
-    //buying token from the sale    
+    //buying token from the sale
     function buyToken(address _tokenAddress, uint256 _amount) external payable {
         TokenSale storage sale = tokenToSale[_tokenAddress];
 
-        //check if the sale is open
-        require(sale.isOpen == true, "Factory: Buying closed");
-        require(_amount >= 1 ether, "Factory: Amount is too low");
-        require(_amount <= 10000 ether, "Factory: Amount exceed");
+        require(sale.isOpen, "Factory: Buying closed");
+        require(_amount > 0, "Factory: Invalid amount");
 
-        //calculate the price of 1 token
-        uint256 cost = getCost(sale.sold);
+        uint256 costPerToken = getCost(sale.sold);
+        uint256 price = (_amount * costPerToken) / 1e18;
 
-        uint256 price = cost * (_amount / 10 ** 18);
+        require(msg.value >= price, "Factory: Insufficient ETH received");
 
-        //make sure enough eth is sent
-        require(msg.value >= price, "Factory: Insufficient ETH recived");
-
-        //update the sale
         sale.sold += _amount;
         sale.raised += price;
 
-        ///check whether token or target limit reached ????
         if (sale.sold >= TOKEN_LIMIT || sale.raised >= TARGET) {
             sale.isOpen = false;
         }
 
         Token(_tokenAddress).transfer(msg.sender, _amount);
 
-        //emit the evnt
         emit Buy(_tokenAddress, _amount);
     }
 
     //deposit the funds to the creator
     function deposit(address _token) external {
-        //getting the token info using its map address
+        TokenSale storage sale = tokenToSale[_token];
         Token token = Token(_token);
-        TokenSale memory sale = tokenToSale[_token];
 
-        require(sale.isOpen == false, "Factory: Target not reached");
+        require(!sale.isOpen, "Factory: Sale not closed");
+        require(sale.raised > 0, "Factory: Nothing to deposit");
 
-        //Transfer token
-        token.transfer(sale.creator, token.balanceOf(address(this)));
+        uint256 tokenBalance = token.balanceOf(address(this));
+        if (tokenBalance > 0) {
+            token.transfer(sale.creator, tokenBalance);
+        }
 
-        //Transfer ETH raised
         (bool success, ) = payable(sale.creator).call{value: sale.raised}("");
         require(success, "Factory: ETH transfer failed");
+
+        sale.raised = 0; // prevent reentrancy
     }
 
     //withdraw the funds only by owner
