@@ -44,7 +44,7 @@ contract Factory {
         uint256 step = 0.0001 ether; //itna increase hoga after
         uint256 increment = 10000; /// itne token sale
 
-        uint256 cost = (step * (_sold / increment)) + floor;
+        uint256 cost = (step * (_sold / 1e18 / increment)) + floor;
         return cost;
     }
 
@@ -54,7 +54,7 @@ contract Factory {
         string memory _symbol
     ) external payable {
         //make to pay the fee
-        require(msg.value >= fee, "creator's fee not payed yet!");
+        require(msg.value == fee, "creator's fee not payed yet!");
 
         //create a new token and store it in "token var"
         Token token = new Token(msg.sender, _name, _symbol, 1_000_000 ether);

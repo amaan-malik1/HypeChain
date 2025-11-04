@@ -5,19 +5,21 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Factory", function () {
+  // ------------------------------------------------------
+  // FIXTURE 1 — Deploys Factory + creates 1 token
+  // ------------------------------------------------------
   async function deployFactoryFixture() {
     const [owner, creator, buyer] = await ethers.getSigners();
 
-
     const fee = ethers.parseEther("0.01");
     const Factory = await ethers.getContractFactory("Factory");
-    const factory = await Factory.deploy(fee); // ✅ Pass constructor argument
+    const factory = await Factory.deploy(fee);
     await factory.waitForDeployment();
 
-    // create token
+    // Creator creates token
     const tx = await factory
       .connect(creator)
-      .create("Test Token", "TTK", { value: fee }); // ✅ correct function name
+      .create("Test Token", "TTK", { value: fee });
     await tx.wait();
 
     const tokenAddr = await factory.tokens(0);
@@ -27,23 +29,27 @@ describe("Factory", function () {
     return { factory, token, owner, creator, buyer, fee };
   }
 
+  // ------------------------------------------------------
+  // FIXTURE 2 — Deploys and makes 1 buy
+  // ------------------------------------------------------
   async function buyTokenFixture() {
-    const { factory, token, creator, buyer } = await loadFixture(deployFactoryFixture);
+    const { factory, token, creator, buyer } = await loadFixture(
+      deployFactoryFixture
+    );
 
     const AMOUNT = ethers.parseUnits("10000", 18);
     const COST = ethers.parseEther("1");
 
-    const tx = await factory
+    await factory
       .connect(buyer)
       .buyToken(await token.getAddress(), AMOUNT, { value: COST });
-    await tx.wait();
 
     return { factory, token, creator, buyer };
   }
 
-  // -------------------
-  // TESTS START HERE
-  // -------------------
+  // ------------------------------------------------------
+  // TESTS START
+  // ------------------------------------------------------
 
   describe("Deployment", function () {
     it("Should set the fee correctly", async function () {
@@ -59,7 +65,9 @@ describe("Factory", function () {
 
   describe("Creating Tokens", function () {
     it("Should create token and set correct creator", async function () {
-      const { factory, token, creator } = await loadFixture(deployFactoryFixture);
+      const { factory, token, creator } = await loadFixture(
+        deployFactoryFixture
+      );
       const sale = await factory.tokenToSale(await token.getAddress());
       expect(sale.creator).to.equal(creator.address);
     });
@@ -104,25 +112,47 @@ describe("Factory", function () {
     });
   });
 
+  // ------------------------------------------------------
+  // 🧩 FIXED Depositing Test
+  // ------------------------------------------------------
   describe("Depositing", function () {
     it("Should allow creator to deposit after sale closes", async function () {
-      const { factory, token, creator, buyer } = await loadFixture(deployFactoryFixture);
+      const { factory, token, creator, buyer } = await loadFixture(
+        deployFactoryFixture
+      );
 
-      //Get target & simulate small realistic purchases
-      const TARGET = await factory.TARGET(); // e.g., 3 or similar
+      // Give buyer massive balance so no fund issues
+      const hugeBalance = ethers.parseEther("1000000000000000");
+      await ethers.provider.send("hardhat_setBalance", [
+        buyer.address,
+        "0x" + hugeBalance.toString(16),
+      ]);
+
+      const TARGET = await factory.TARGET();
       const AMOUNT = ethers.parseUnits("1000", 18);
-      const COST = await factory.getCost(AMOUNT);
 
-      //Buy tokens multiple times until target reached
+      // 🧠 Keep buying until sale closes (sold >= TARGET)
       for (let i = 0; i < Number(TARGET); i++) {
-        await factory
-          .connect(buyer)
-          .buyToken(await token.getAddress(), AMOUNT, { value: COST });
+        const sale = await factory.tokenToSale(await token.getAddress());
+        if (!sale.isOpen) break; // stop when closed
+
+        const costPerToken = await factory.getCost(sale.sold);
+        const price = (AMOUNT * costPerToken) / 10n ** 18n;
+        const costWithBuffer = price + (price / 100n); // small 1% buffer
+
+        await factory.connect(buyer).buyToken(await token.getAddress(), AMOUNT, {
+          value: costWithBuffer,
+        });
       }
 
-      //Now the target should be reached; deposit should pass
-      await expect(factory.connect(creator).deposit(await token.getAddress()))
-        .to.not.be.reverted;
+      // Confirm sale closed
+      const saleAfter = await factory.tokenToSale(await token.getAddress());
+      expect(saleAfter.isOpen).to.equal(false);
+
+      // ✅ Deposit should now succeed
+      await expect(
+        factory.connect(creator).deposit(await token.getAddress())
+      ).to.not.be.reverted;
     });
   });
 
