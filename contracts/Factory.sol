@@ -9,7 +9,7 @@ contract Factory {
 
     uint256 public immutable fee;
     address public owner;
-    uint256 totalTokens;
+    uint256 public totalTokens;
     address[] public tokens;
 
     mapping(address => TokenSale) public tokenToSale;

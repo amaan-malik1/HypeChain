@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "D:\\Cohort 3.0\\Projects Full Stack\\HypeChain\\contracts\\Factory.sol": {
-      "lastModificationDate": 1762234817151,
-      "contentHash": "3cebb70aba24f7cd1e9a6a015f5a50e9",
+      "lastModificationDate": 1763736713057,
+      "contentHash": "0549b10c2c356cb1a740e3bd17c589b6",
       "sourceName": "contracts/Factory.sol",
       "solcConfig": {
         "version": "0.8.27",
